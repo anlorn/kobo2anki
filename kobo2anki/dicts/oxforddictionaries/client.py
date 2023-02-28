@@ -1,4 +1,3 @@
-import os
 import json
 import logging
 import requests
@@ -7,7 +6,7 @@ from urllib.parse import urljoin
 from typing import Dict, Optional
 
 
-from kobo2anki.caching import get_cache_path
+from kobo2anki.caching import LocalFSCaching
 from kobo2anki.dicts.oxforddictionaries import parser
 from kobo2anki.dicts import errors, model
 
@@ -23,10 +22,13 @@ class OxfordDictionaryClient:
     def __init__(self, app_id: str, app_key: str):
         self._app_id = app_id
         self._app_key = app_key
+        self._cache_handler = LocalFSCaching()
+        """
         self._cache_path = os.path.join(
             get_cache_path(),
             DICT_NAME
         )
+        """
 
     def get_definition(self, word: str) -> model.DictWord:
         json_response = self._get_raw_response(word)
@@ -43,54 +45,38 @@ class OxfordDictionaryClient:
             self._save_response_to_cache(word, response_json)
         return response_json
 
-    def _get_word_cache_path(self, word: str) -> str:
-        word_cache_path = os.path.join(
-            self._cache_path,
-            word,
-        ) + ".json"
-        logger.debug(
-            "Check file %s for cache for wordi %s",
-            word_cache_path,
-            word
-        )
-        return word_cache_path
+    def _get_word_cache_key(self, word: str) -> str:
+        cache_key = f"word_{word}.json"
+        return cache_key
 
     def _get_cached_json(self, word: str) -> Optional[Dict]:
         result = None  # type: Optional[Dict]
-        try:
-            word_cache_path = self._get_word_cache_path(word)
-            with open(word_cache_path, 'r') as fh:
-                result = json.loads(fh.read())
-
-        except json.JSONDecodeError as exc:
-            logger.warning(
-                "Can't parse cache json for word '%s'. Err: %s",
-                word,
-                exc
-            )
-
-        except FileNotFoundError:
+        cached_data = self._cache_handler.get_cached_data(
+            DICT_NAME,
+            self._get_word_cache_key(word)
+        )
+        if cached_data is None:
             logger.debug("We don't have cache from word '%s'", word)
-
+        else:
+            try:
+                result = json.loads(cached_data)
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "Can't parse cache json for word '%s'. Err: %s",
+                    word,
+                    exc
+                )
         return result
 
     def _save_response_to_cache(self, word: str, response_json: Dict):
-        word_cache_path = self._get_word_cache_path(word)
-        if os.path.exists(word_cache_path):
-            logger.warning(
-                """Looks like we already cached value for word %s,
-                will overwrite it.""",
-                word
-            )
-        word_cache_folder = os.path.abspath(__file__)
-        if not word_cache_folder:
-            os.makedirs(word_cache_folder)
-        with open(word_cache_path, "w") as fh:
-            fh.write(json.dumps(response_json))
-            logger.debug(
-                "Saved cache file %s for word %s",
-                word_cache_path, word
-            )
+        self._cache_handler.save_data_to_cache(
+            DICT_NAME,
+            self._get_word_cache_key(word),
+            json.dumps(response_json).encode()
+        )
+        logger.debug(
+            "Saved cache for word %s", word
+        )
 
     def _get_word_from_dictionary(self, word: str) -> Dict:
         url = urljoin(
