@@ -1,3 +1,4 @@
+import shutil
 import pytest
 import appdirs
 import tempfile
@@ -8,12 +9,11 @@ from kobo2anki import caching
 
 @pytest.fixture
 def appdirs_mock(mocker: MockerFixture):
-    # we need a different cache folder everytime
-    def inner():
-        mock = mocker.MagicMock(spec=appdirs)
-        mock.user_cache_dir.return_value = tempfile.mkdtemp()
-        return mock
-    return inner
+    mock = mocker.MagicMock(spec=appdirs)
+    temp_folder = tempfile.mkdtemp()
+    mock.user_cache_dir.return_value = temp_folder
+    yield mock
+    shutil.rmtree(temp_folder)
 
 
 class TestLocalFSCaching:
@@ -23,7 +23,7 @@ class TestLocalFSCaching:
     test_data = b"some_test_data"
 
     def test_get_cached_data_no_file(self, mocker, appdirs_mock):
-        mocker.patch.object(caching, 'appdirs', appdirs_mock())
+        mocker.patch.object(caching, 'appdirs', appdirs_mock)
         cache_handler = caching.LocalFSCaching()
         cached_data = cache_handler.get_cached_data(
             self.test_key,
@@ -36,7 +36,7 @@ class TestLocalFSCaching:
         mocker,
         appdirs_mock
     ):
-        mocker.patch.object(caching, 'appdirs', appdirs_mock())
+        mocker.patch.object(caching, 'appdirs', appdirs_mock)
         cache_handler = caching.LocalFSCaching()
         cache_handler.save_data_to_cache(
             self.test_key,
@@ -55,7 +55,7 @@ class TestLocalFSCaching:
         mocker,
         appdirs_mock
     ):
-        mocker.patch.object(caching, 'appdirs', appdirs_mock())
+        mocker.patch.object(caching, 'appdirs', appdirs_mock)
         cache_handler = caching.LocalFSCaching()
 
         # save cache first time
