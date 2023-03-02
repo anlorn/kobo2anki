@@ -23,7 +23,7 @@ class PartExplanations:
 
 
 @dataclass
-class DictWord:
+class WordDefinition:
     word: str
     transcription: str
     explanations: List[PartExplanations]
