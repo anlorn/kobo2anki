@@ -1,8 +1,7 @@
 import json
 import pytest
 
-from kobo2anki.dicts import model
-from kobo2anki.caching import get_cache_path
+from kobo2anki import model
 from kobo2anki.dicts.oxforddictionaries import client as client_module
 
 
@@ -22,7 +21,7 @@ def requests_fixture(mocker, dict_test_response):
 
 @pytest.fixture
 def dict_word_fixture():
-    return model.DictWord("word", "transcription", [])
+    return model.WordDefinition("word", "transcription", [])
 
 
 @pytest.fixture

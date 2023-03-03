@@ -11,8 +11,8 @@ def test_dict_words():
     return [
         model.DictWord(text=',bobbing.', dict_suffix='-en'),
         model.DictWord(text='goaded ', dict_suffix='-en'),
-        model.DictWord(text='lured.', dict_suffix='-en'),
-        model.DictWord(text=' flatter', dict_suffix='-en'),
+        model.DictWord(text='lured?', dict_suffix='-en'),
+        model.DictWord(text='!flatter', dict_suffix='-en'),
         model.DictWord(text='convalescent,', dict_suffix='-en'),
     ]
 

@@ -1,11 +1,11 @@
-from kobo2anki.dicts import model
+from kobo2anki import model
 from kobo2anki.dicts.oxforddictionaries import parser
 from tests.dicts.oxforddictionaries import data
 
 
 def test_parsing():
     actual_word = parser.parse_data(data.response_data)
-    excepted_word = model.DictWord(
+    excepted_word = model.WordDefinition(
         word="example",
         transcription="ɪɡˈzæmpəl",
         explanations=[

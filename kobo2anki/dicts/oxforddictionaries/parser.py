@@ -1,19 +1,21 @@
 import logging
 from typing import Dict, Optional
-from kobo2anki.dicts import model, errors
+
+from kobo2anki import model
+from kobo2anki.dicts import errors
 
 
 logger = logging.getLogger(__name__)
 
 
-def parse_data(raw_data: Dict) -> model.DictWord:
+def parse_data(raw_data: Dict) -> model.WordDefinition:
     if 'id' not in raw_data:
         raise errors.CantParseDictData("Response has no ID")
     word = raw_data['id']
 
     transcription = _get_transcription(raw_data)
 
-    dict_word = model.DictWord(
+    dict_word = model.WordDefinition(
         word.lower(),
         transcription=transcription,
         explanations=[])

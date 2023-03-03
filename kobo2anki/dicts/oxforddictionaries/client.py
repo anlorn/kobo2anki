@@ -8,7 +8,8 @@ from typing import Dict, Optional
 
 from kobo2anki.caching import LocalFSCaching
 from kobo2anki.dicts.oxforddictionaries import parser
-from kobo2anki.dicts import errors, model
+from kobo2anki.dicts import errors
+from kobo2anki import model
 
 logger = logging.getLogger(__name__)
 
@@ -23,19 +24,14 @@ class OxfordDictionaryClient:
         self._app_id = app_id
         self._app_key = app_key
         self._cache_handler = LocalFSCaching()
-        """
-        self._cache_path = os.path.join(
-            get_cache_path(),
-            DICT_NAME
-        )
-        """
 
-    def get_definition(self, word: str) -> model.DictWord:
+    def get_definition(self, word: str) -> model.WordDefinition:
         json_response = self._get_raw_response(word)
         definition = self._parse_json_definition(word, json_response)
+
         return definition
 
-    def _parse_json_definition(self, word: str, raw_response: Dict) -> model.DictWord:
+    def _parse_json_definition(self, word: str, raw_response: Dict) -> model.WordDefinition:
         return parser.parse_data(raw_response)
 
     def _get_raw_response(self, word: str) -> Dict:

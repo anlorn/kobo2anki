@@ -1,6 +1,6 @@
 import genanki
 import logging
-from typing import List, Dict
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,6 @@ class AnkiModel:
     ]
 
     def __init__(self):
-        self.model_id = '1903016060'
         self._model = genanki.Model(
             model_id=self.model_id,
             name=self.name,
@@ -122,12 +121,16 @@ class AnkiModel:
                 {
                     "name": f"{self.name} Template",
                     "qfmt": self.front_template,
-                    "afmt": self.front_template,
+                    "afmt": self.back_template,
                 }
 
             ]
 
         )
+
+    @property
+    def model_id(self):
+        return '1903016060'
 
     def _get_ordered_fields_names(self) -> List:
         fields = filter(
@@ -137,7 +140,7 @@ class AnkiModel:
         logger.debug("Model fields names in orderd list: %s", fields)
         return list(fields)
 
-    def generate_note(self, **fields):
+    def generate_note(self, **fields) -> genanki.Note:
         logger.debug(
             "Got request to generate note with fields %s",
             fields

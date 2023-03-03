@@ -1,170 +1,89 @@
+import hashlib
+import logging
+from typing import List
+
 import genanki
 
-FRONT_TEMPLATE = '<p class="question">{{Word}} [<b>{{Part}}</b>]</p>'
-CSS = '''
-.card {
- font-family: arial;
- font-size: 15px;
- text-align: left;
- color: black;
- background-color: white;
-}
+from kobo2anki.anki import model
+from kobo2anki.model import WordDefinition
 
-.question {
-    text-align: center;
-    font-size: 25px;
-}
-
-.expl {
-    color: DodgerBlue
-}
-
-ol li {
-    margin: 5px;
-}
-'''
-BACK_TEMPLATE = '''
-    {{FrontSide}}
-
-    <hr id=answer>
-    <ol>
-    <li>
-        <div class="expl">{{Explanation_1}}}</div>
-        {{#Synonym_1}} Synonym: {{Synonym_1}} {{/Synonym_1}}
-          {{#Example_1}}
-        <ul>
-        <li><i>{{Example_1}}</i></li>
-        </ul>
-          {{/Example_1}}
-    </li>
-    {{#Explanation_2}}
-    <li>
-        <div class="expl">{{Explanation_2}}</div>
-            {{#Synonym_2}} Synonym: {{Synonym_2}} {{/Synonym_2}}
-          {{#Example_2}}
-        <ul>
-        <li><i>{{Example_2}}</i></li>
-        </ul>
-          {{/Example_2}}
-    </li>
-    {{/Explanation_2}}
-    {{#Explanation_3}}
-    <li>
-        <div class="expl">{{Explanation_3}}</div>
-            {{#Synonym_3}} Synonym: {{Synonym_3}} {{/Synonym_3}}
-          {{#Example_3}}
-        <ul>
-        <li><i>{{Example_3}}</i></li>
-        </ul>
-          {{/Example_3}}
-    </li>
-    {{/Explanation_3}}
-    </ol>
-
-    <a href="https://www.oxfordlearnersdictionaries.com/us/definition/english/{{Word}}">check in dictionary</a>
-    <hr>
-    {{Picture}}
-    {{Pronunciation}}
-'''
-
-FIELDS = [
-    {
-        "name": "Word",
-        "font": "Arial",
-    },
-    {
-        "name": "Part",
-        "font": "Arial Black",
-    },
-    {
-        "name": "Explanation_1",
-        "font": "Arial",
-    },
-    {
-        "name": "Synonym_1",
-        "font": "Arial",
-    },
-    {
-        "name": "Example_1",
-        "font": "Arial",
-    },
-    {
-        "name": "Explanation_2",
-        "font": "Arial",
-    },
-    {
-        "name": "Synonym_2",
-        "font": "Arial",
-    },
-    {
-        "name": "Example_2",
-        "font": "Arial",
-    },
-    {
-        "name": "Explanation_3",
-        "font": "Arial",
-    },
-    {
-        "name": "Synonym_3",
-        "font": "Arial",
-    },
-    {
-        "name": "Example_3",
-        "font": "Arial",
-    },
-    {
-        "name": "Pronunciation",
-        "font": "Arial",
-    },
-    {
-        "name": "Picture",
-        "font": "Arial",
-    }
-]
-
-# TODO make configurable
-MODEL_ID = 1903016060
-
-MODEL_NAME = "Learning English Model"
-
-my_model = genanki.Model(
-    model_id=MODEL_ID,
-    name=MODEL_NAME,
-    fields=FIELDS,
-    templates=[
-        {
-            "name": "Basic Kobo Dict Template",
-            "qfmt": FRONT_TEMPLATE,
-            "afmt": BACK_TEMPLATE,
-        }
-
-    ]
-
-)
-
-my_note = genanki.Note(
-    model=my_model,
-    fields=[
-        "Milk",
-        "Noun",
-        "Expl", "Syn", "Example",
-        "Expl2", "Syn2", "Example2",
-        "Expl3", "Syn3", "Example3",
-        '[sound:sound.ogg]', '<img src="image.jpg">'
-
-    ]
-)
+logger = logging.getLogger(__name__)
 
 
-DECK_ID = 2010215544
-DECK_NAME = "Cards for Kobo"
+class AnkiDeck:
 
-my_deck = genanki.Deck(
-    deck_id=DECK_ID,
-    name=DECK_NAME,
-)
+    def __init__(self, deck_name: str):
+        self._model = model.AnkiModel()
+        self._name = deck_name
 
-my_deck.add_note(my_note)
-my_package = genanki.Package(my_deck)
-my_package.media_files = ['sound.ogg', 'sound.mp3', 'image.jpg']
-my_package.write_to_file("/tmp/test.apkg")
+    def generate_and_save_deck(
+            self,
+            words_definitions: List[WordDefinition],
+            filepath_for_new_deck: str,
+    ):
+        if not words_definitions:
+            raise RuntimeError("List of words is empty")
+
+        deck_id = self._generate_deck_id(words_definitions)
+        deck = genanki.Deck(
+            deck_id=deck_id,
+            name=self._name,
+        )
+
+        for word_definition in words_definitions:
+            self._add_word(deck, word_definition)
+            logger.info(
+                "Add word %s to deck %d",
+                word_definition.word,
+                deck_id
+            )
+
+        package = genanki.Package(deck)
+        #  package.media_files = ['sound.ogg', 'sound.mp3', 'image.jpg']
+        package.write_to_file(filepath_for_new_deck)
+
+    def _generate_deck_id(self, words_definitions: List[WordDefinition]) -> int:
+        """
+        Generate Deck ID by using list of all sorted words + model id encoded in MD5
+        and convereted to INT
+        """
+        all_words_str = "::".join(
+            sorted(
+                list(map(lambda definition: definition.word.lower(), words_definitions))
+            )
+        )
+        key = f"{all_words_str}_{self._model.model_id}"
+        deck_id = int(hashlib.md5(key.encode()).hexdigest(), 16)
+        return deck_id
+
+    def _add_word(self, deck: genanki.Deck, word_definition: WordDefinition):
+
+        for part_explanation in word_definition.explanations:
+            args = {
+                "word": word_definition.word,
+                "part": part_explanation.part.value,
+            }
+            if not part_explanation.definitions:
+                logger.warning(
+                    "Definitions for word %s are empty, skipping word",
+                    word_definition.word
+                )
+                continue
+            for i, definition in enumerate(part_explanation.definitions):
+                if not definition.definitions:
+                    logger.warning(
+                        "Definition %d for word %s is empty, skipping",
+                        i + 1,
+                        word_definition.word
+                    )
+                    continue
+                args[f"explanation_{i+1}"] = ";".join(definition.definitions[:3])
+                args[f"synonum_{i+1}"] = ";".join(definition.synonyms[:5])
+                args[f"example_{i+1}"] = ";".join(definition.examples[:3])
+            logger.debug(
+                "Generated note for word %s(%s)",
+                word_definition.word,
+                part_explanation.part.value,
+            )
+            note = self._model.generate_note(**args)
+            deck.add_note(note)
