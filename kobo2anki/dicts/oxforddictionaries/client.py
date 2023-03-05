@@ -1,7 +1,6 @@
 import json
 import logging
 import requests
-
 from urllib.parse import urljoin
 from typing import Dict, Optional
 

@@ -5,8 +5,11 @@ from dataclasses import dataclass
 
 class Parts(Enum):
     VERB = "verb"
-    ADJ = "adj"
+    ADJECTIVE = "adjective"
     NOUN = "noun"
+    ADVERB = "adverb"
+    INTERJECTION = "interjection"
+    PREPOSITION = "preposition"
 
 
 @dataclass

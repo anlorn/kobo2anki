@@ -78,7 +78,7 @@ def _parse_word_lexical_entries(le_data: Dict) -> model.PartExplanations:
 
 
 def _parse_word_sense(raw_sense: Dict) -> model.Definition:
-    defintions = raw_sense['definitions']
+    defintions = raw_sense.get('definitions')
     if not defintions:
         raise errors.CantParseDictData(f"Sense record '{raw_sense}' has no definitions")
 

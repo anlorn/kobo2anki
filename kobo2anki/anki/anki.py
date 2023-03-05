@@ -54,7 +54,7 @@ class AnkiDeck:
         )
         key = f"{all_words_str}_{self._model.model_id}"
         deck_id = int(hashlib.md5(key.encode()).hexdigest(), 16)
-        return deck_id
+        return 123354654
 
     def _add_word(self, deck: genanki.Deck, word_definition: WordDefinition):
 
@@ -69,7 +69,7 @@ class AnkiDeck:
                     word_definition.word
                 )
                 continue
-            for i, definition in enumerate(part_explanation.definitions):
+            for i, definition in enumerate(part_explanation.definitions[:2]):
                 if not definition.definitions:
                     logger.warning(
                         "Definition %d for word %s is empty, skipping",
@@ -78,7 +78,7 @@ class AnkiDeck:
                     )
                     continue
                 args[f"explanation_{i+1}"] = ";".join(definition.definitions[:3])
-                args[f"synonum_{i+1}"] = ";".join(definition.synonyms[:5])
+                args[f"synonym_{i+1}"] = ";".join(definition.synonyms[:5])
                 args[f"example_{i+1}"] = ";".join(definition.examples[:3])
             logger.debug(
                 "Generated note for word %s(%s)",
