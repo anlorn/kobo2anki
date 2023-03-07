@@ -31,7 +31,7 @@ def main(kobo_path, output_deck_path, deck_name, debug):
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.WARNING)
 
     dict_app_id = os.environ.get("DICT_APP_ID")
     if not dict_app_id:

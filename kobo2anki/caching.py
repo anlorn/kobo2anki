@@ -7,13 +7,6 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-def get_cache_path() -> str:
-    return os.path.join(
-        appdirs.user_cache_dir(),
-        "kobo2anki"
-    )
-
-
 class LocalFSCaching:
 
     def __init__(self):
@@ -23,6 +16,7 @@ class LocalFSCaching:
     def _get_cache_file_path(self, key: str, entity: str) -> str:
         file_path = os.path.join(
             self._cache_dir,
+            "kobo2anki",
             entity,
             key
         )

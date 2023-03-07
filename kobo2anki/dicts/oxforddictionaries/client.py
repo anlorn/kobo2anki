@@ -6,6 +6,7 @@ from typing import Dict, Optional
 
 
 from kobo2anki.caching import LocalFSCaching
+from kobo2anki.pronunciation import WordPronunciation
 from kobo2anki.dicts.oxforddictionaries import parser
 from kobo2anki.dicts import errors
 from kobo2anki import model
@@ -29,6 +30,10 @@ class OxfordDictionaryClient:
         definition = self._parse_json_definition(word, json_response)
 
         return definition
+
+    def get_pronunciation(self, word: str) -> Optional[WordPronunciation]:
+        json_response = self._get_raw_response(word)
+        return None
 
     def _parse_json_definition(self, word: str, raw_response: Dict) -> model.WordDefinition:
         return parser.parse_data(raw_response)

@@ -2,6 +2,8 @@ from typing import List, Optional
 from enum import Enum
 from dataclasses import dataclass
 
+from kobo2anki.pronunciation import WordPronunciation
+
 
 class Parts(Enum):
     VERB = "verb"
@@ -30,4 +32,4 @@ class WordDefinition:
     word: str
     transcription: str
     explanations: List[PartExplanations]
-    audio_file_path: Optional[str] = None
+    pronunciation: Optional[WordPronunciation] = None

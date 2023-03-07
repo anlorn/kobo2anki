@@ -30,19 +30,22 @@ class WordPronunciation:
             audio_data = response.content
             if len(audio_data) > 0:
                 logger.debug(
-                    "Got succesfull response with status %s and number of bytes %d",
+                    "Got succesfull response with status %s and number of bytes \
+                    %d",
                     response.status_code,
                     len(audio_data)
                 )
                 return audio_data
             else:
                 raise errors.GettingPronunciationError(
-                    f"Url {self._url} response has status code {response.status_code}, but no content",
+                    f"Url {self._url} response has status code \
+                     {response.status_code}, but no content",
                 )
 
         else:
             raise errors.GettingPronunciationError(
-                f"Url {self._url} response has error status code {response.status_code}",
+                f"Url {self._url} response has error status code \
+                 {response.status_code}",
             )
 
     def _save_audio_data(self, fullpath: str, audio_data: bytes):
@@ -54,7 +57,8 @@ class WordPronunciation:
         path, _ = os.path.split(fullpath)
         if not os.path.exists(path):
             raise errors.SavingPronunciationError(
-                f"Can't save pronunciation to {path}, because folder doesn't exists"
+                f"Can't save pronunciation to {path}, \
+                 because folder doesn't exists"
             )
 
         with open(fullpath, 'wb') as wh:
@@ -66,11 +70,17 @@ class WordPronunciation:
         FullPath to save file should include filename
         """
         cache_key = self._get_filename()
-        audio_data = self._cache_handler.get_cached_data(self.cache_entity, cache_key)
+        audio_data = self._cache_handler.get_cached_data(
+            self.cache_entity, cache_key
+        )
         if not audio_data:
-            logger.debug("No pronunciation cache for %s, will download data", cache_key)
+            logger.debug(
+                "No pronunciation cache for %s, will download data", cache_key
+            )
             audio_data = self._download_audio_data()
-            self._cache_handler.save_data_to_cache(self.cache_entity, cache_key, audio_data)
+            self._cache_handler.save_data_to_cache(
+                self.cache_entity, cache_key, audio_data
+            )
         logger.debug(
             "Going to save audio_data from url %s to %s",
             self._url,

@@ -115,24 +115,24 @@ class TestAnkiDeck:
         assert anki_model_mock.return_value.generate_note.call_args_list == [
             mocker.call(
                 word='word', part='noun', explanation_1='def11;def12;def13',
-                synonum_1='syn11;syn11', example_1='ex11',
-                explanation_2='def21;def22;def23', synonum_2='syn21;syn21', example_2='ex21'
+                synonym_1='syn11;syn11', example_1='ex11',
+                explanation_2='def21;def22;def23', synonym_2='syn21;syn21', example_2='ex21'
             ),
             mocker.call(
                 word='word', part='verb',
                 explanation_1='second_def11',
-                synonum_1='', example_1=''
+                synonym_1='', example_1=''
             ),
             mocker.call(
                 word='second-word', part='noun',
                 explanation_1='second-def11;second-def12;second-def13',
-                synonum_1='second-syn11;second-syn11', example_1='second-ex11',
+                synonym_1='second-syn11;second-syn11', example_1='second-ex11',
                 explanation_2='second-def21;second-def22;second-def23',
-                synonum_2='second-syn21;second-syn21', example_2='second-ex21'
+                synonym_2='second-syn21;second-syn21', example_2='second-ex21'
             ),
             mocker.call(
                 word='second-word', part='verb',
                 explanation_1='second-second_def11',
-                synonum_1='', example_1='',
+                synonym_1='', example_1='',
             )
         ]
