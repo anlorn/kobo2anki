@@ -6,9 +6,7 @@ from typing import List
 
 from kobo2anki import model
 from kobo2anki.kobo import reader as kobo_reader
-from kobo2anki.dicts.oxforddictionaries import (
-    client as dict_client,
-)
+from kobo2anki.dicts import of_client, freedict_client
 from kobo2anki.dicts import errors as dict_errors
 
 from kobo2anki.anki import anki
@@ -27,23 +25,28 @@ logger = logging.getLogger(__name__)
 #@click.argument("dict_app_id", envvar='DICT_APP_ID')
 @click.option("--deck-name", default="Kobo words deck")
 @click.option("--debug/--no-debug", default=False)
-def main(kobo_path, output_deck_path, deck_name, debug):
+@click.option("--limit", default=-1)
+def main(kobo_path, output_deck_path, deck_name, debug, limit):
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.INFO)
+    CLIENTS = []
 
     dict_app_id = os.environ.get("DICT_APP_ID")
-    if not dict_app_id:
-        raise RuntimeError("Env variable 'DICT_APP_ID' isn't set or empty")
     dict_key = os.environ.get("DICT_KEY")
-    if not dict_key:
-        raise RuntimeError("Env variable 'DICT_KEY' isn't set or empty")
-
+    if dict_app_id and dict_key:
+        of_dict_client_instance = of_client.OxfordDictionaryClient(dict_app_id, dict_key)
+        CLIENTS.append(of_dict_client_instance)
+    else:
+        logger.warning(
+            "Env variables 'DICT_APP_ID' or 'DICT_KEY' are not defined, will not initialize oxford dictionoary"
+        )
     words_definitions: List[model.WordDefinition] = []
-
     kobo_db = kobo_reader.KoboReader(kobo_path)
-    dict_client_instance = dict_client.OxfordDictionaryClient(dict_app_id, dict_key)
+    # TODO think how to make is extendable 
+    freedict_client_instance = freedict_client.FreeDictionaryClient()
+    CLIENTS.append(freedict_client_instance)
     anki_deck = anki.AnkiDeck(deck_name)
     words_from_kobo = kobo_db.get_saved_words()
 
@@ -56,21 +59,29 @@ def main(kobo_path, output_deck_path, deck_name, debug):
     logger.info("Read %d words from kobo", len(words_from_kobo))
     logger.debug("List of words from kobo: %s", words_from_kobo)
 
-    for word_from_kobo in sorted(words_from_kobo):
-        logger.debug("Trying to find defintion for word %s", word_from_kobo)
-        try:
-            word_definition = dict_client_instance.get_definition(word_from_kobo)
-            words_definitions.append(word_definition)
-            logger.debug("Found definition for word %s", word_from_kobo)
-        except (dict_errors.WordTranslationNotFound):
-            logger.warning(
-                "Didn't find definition for word %s, will skip the word", word_from_kobo
-            )
-        except dict_errors.CantParseDictData as exc:
-            logger.warning("Can't parse word %s. Error %s", word_from_kobo, exc)
+    words_limit = limit if limit > 0 else len(words_from_kobo)
+    logger.info("Limit number of words to %d", words_limit)
 
-        except dict_errors.NotAbleToGetWordTranlsation as exc:
-            logger.error("Can't get word %s. Err: %s", word_from_kobo, exc)
+    for word_from_kobo in sorted(words_from_kobo)[:words_limit]:
+        word_definition = None
+        for dict_client in CLIENTS:
+            logger.debug("Trying to find defintion for word %s, using %s", word_from_kobo, dict_client)
+            try:
+                word_definition = dict_client.get_definition(word_from_kobo)
+                words_definitions.append(word_definition)
+                logger.info("Found definition for word %s using client %s", word_from_kobo, dict_client)
+                break
+            except (dict_errors.WordTranslationNotFound):
+                logger.warning(
+                    "Didn't find definition for word %s, will skip the word", word_from_kobo
+                )
+            except dict_errors.CantParseDictData as exc:
+                logger.warning("Can't parse word %s. Error %s", word_from_kobo, exc)
+
+            except dict_errors.NotAbleToGetWordTranlsation as exc:
+                logger.warning("Can't get word %s. Err: %s", word_from_kobo, exc)
+        if word_definition is None:
+            logger.error("Didn't find word defintion for word %s", word_definition)
 
     logger.debug("Going to generate anki deck for %d words", len(words_definitions))
     anki_deck.generate_and_save_deck(words_definitions, output_deck_path)

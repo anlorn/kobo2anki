@@ -28,12 +28,16 @@ class OxfordDictionaryClient:
     def get_definition(self, word: str) -> model.WordDefinition:
         json_response = self._get_raw_response(word)
         definition = self._parse_json_definition(word, json_response)
-
+        definition.pronunciation = self._get_pronunciation(json_response)
         return definition
 
-    def get_pronunciation(self, word: str) -> Optional[WordPronunciation]:
-        json_response = self._get_raw_response(word)
-        return None
+    def _get_pronunciation(self, raw_json: Dict) -> Optional[WordPronunciation]:
+        pronunciation_url = parser.get_audio_file_url(raw_json)
+        if pronunciation_url:
+            pronunciation = WordPronunciation(pronunciation_url)
+        else:
+            pronunciation = None
+        return pronunciation
 
     def _parse_json_definition(self, word: str, raw_response: Dict) -> model.WordDefinition:
         return parser.parse_data(raw_response)

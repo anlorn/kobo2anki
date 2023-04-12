@@ -25,9 +25,21 @@ def dict_word_fixture():
 
 
 @pytest.fixture
+def mock_word_pronunciation(mocker):
+    return mocker.patch.object(client_module, "WordPronunciation")
+
+
+@pytest.fixture
 def parser_mock(mocker, dict_word_fixture):
     mock_parser = mocker.patch.object(client_module.parser, 'parse_data')
     mock_parser.return_value = dict_word_fixture
+    return mock_parser
+
+
+@pytest.fixture
+def parser_get_audio_file_url_mock(mocker):
+    mock_parser = mocker.patch.object(client_module.parser, 'get_audio_file_url')
+    mock_parser.return_value = 'http://example.com'
     return mock_parser
 
 
@@ -44,7 +56,9 @@ class TestOxfordDictionariesClient:
         requests_fixture,
         dict_test_response,
         parser_mock,
-        dict_word_fixture
+        dict_word_fixture,
+        parser_get_audio_file_url_mock,
+        mock_word_pronunciation,
     ):
         # simulate that cache wasn't found
         cache_mock = cache_handler_factory(get_cache_response=None)
@@ -54,6 +68,7 @@ class TestOxfordDictionariesClient:
         response = client.get_definition(self.test_word)
 
         assert response == dict_word_fixture
+        mock_word_pronunciation.assert_called_once_with("http://example.com")
 
         # ensure cache handler was iniitilized
         assert cache_mock.call_count == 1
@@ -88,7 +103,9 @@ class TestOxfordDictionariesClient:
         requests_fixture,
         dict_test_response,
         parser_mock,
-        dict_word_fixture
+        dict_word_fixture,
+        parser_get_audio_file_url_mock,
+        mock_word_pronunciation,
     ):
 
         # simulate that we found cache file
