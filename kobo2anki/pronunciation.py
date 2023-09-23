@@ -17,7 +17,7 @@ class WordPronunciation:
         self._url = url
         self._cache_handler = LocalFSCaching()
 
-    def _get_filename(self) -> str:
+    def get_filename(self) -> str:
         filename = urlparse(self._url).path.split('/')[-1]
         return filename
 
@@ -69,7 +69,7 @@ class WordPronunciation:
         """
         FullPath to save file should include filename
         """
-        cache_key = self._get_filename()
+        cache_key = self.get_filename()
         audio_data = self._cache_handler.get_cached_data(
             self.cache_entity, cache_key
         )

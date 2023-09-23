@@ -3,6 +3,7 @@ from enum import Enum
 from dataclasses import dataclass
 
 from kobo2anki.pronunciation import WordPronunciation
+from kobo2anki.image_searcher import WordImage
 
 
 class Parts(Enum):
@@ -33,3 +34,4 @@ class WordDefinition:
     transcription: str
     explanations: List[PartExplanations]
     pronunciation: Optional[WordPronunciation] = None
+    image: Optional[WordImage] = None

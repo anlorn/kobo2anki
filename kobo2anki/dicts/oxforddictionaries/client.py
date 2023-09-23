@@ -20,6 +20,8 @@ DICT_NAME = "oxforddictionaries"
 
 class OxfordDictionaryClient:
 
+    credentials_accepted: bool = True
+
     def __init__(self, app_id: str, app_key: str):
         self._app_id = app_id
         self._app_key = app_key
@@ -83,6 +85,11 @@ class OxfordDictionaryClient:
         )
 
     def _get_word_from_dictionary(self, word: str) -> Dict:
+        if not self.credentials_accepted:
+            raise errors.NotAbleToGetWordTranlsation(
+                word,
+                "Dictioanry doesn't accept credentials, will not even call it"
+            )
         url = urljoin(
             BASE_URL,
             LANGUAGE + "/" + word.lower()
@@ -95,7 +102,13 @@ class OxfordDictionaryClient:
             )
             if response.status_code == 404:
                 raise errors.WordTranslationNotFound(word)
-            if response.status_code != 200:
+            elif response.status_code == 403:
+                self.credentials_accepted = False
+                raise errors.NotAbleToGetWordTranlsation(
+                    word,
+                    f"Got status code {response.status_code}, will not use this dictionary"
+                )
+            elif response.status_code != 200:
                 raise errors.NotAbleToGetWordTranlsation(
                     word,
                     f"Got status code {response.status_code}"
@@ -106,3 +119,6 @@ class OxfordDictionaryClient:
             return response_json
         except requests.RequestException as exc:
             raise errors.NotAbleToGetWordTranlsation(word, exc) from exc
+
+    def __repr__(self):
+        return "OxfordDictionaryClient"

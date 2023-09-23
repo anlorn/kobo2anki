@@ -7,6 +7,7 @@ import requests
 from kobo2anki import model
 from kobo2anki.dicts import errors
 from kobo2anki.pronunciation import WordPronunciation
+from kobo2anki.dicts.freedict.pronunciation_guesser import PronunciationURLGuesser
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 class FreeDictionaryClient:
 
     def __init__(self):
-        pass
+        self.pronunciation_url_guesser = PronunciationURLGuesser()
 
     def get_definition(self, word: str) -> model.WordDefinition:
         logger.info("Getting defintion for word %s, using 'freedict'", word)
@@ -50,7 +51,7 @@ class FreeDictionaryClient:
 
             definitions_list = []
             for def_data in meaning["definitions"]:
-                definitions = def_data.get("definition", "")
+                definitions = [def_data.get("definition", "")]
                 synonyms = def_data.get("synonyms", [])
                 examples = [def_data.get("example")] if def_data.get("example") else []
 
@@ -70,10 +71,18 @@ class FreeDictionaryClient:
             logger.debug("Found pronunciation, url - %s", pronunciation_url)
             pronunciation = WordPronunciation(pronunciation_url)
         else:
-            logger.debug("Word has no pronunciation")
-            pronunciation = None
-
+            logger.info("Word has no pronunciation, will true to guess it")
+            url = self.pronunciation_url_guesser.get_url(word)
+            if url:
+                logger.info("Was able to guess URL for for word '%s'", word)
+                pronunciation = WordPronunciation(url)
+            else:
+                logger.info("Wasn't able to guess URL")
+                pronunciation = None
         return model.WordDefinition(
             word=word, transcription=transcription,
             explanations=part_explanations, pronunciation=pronunciation
         )
+
+    def __repr__(self):
+        return "OxfordDictionaryClient"
