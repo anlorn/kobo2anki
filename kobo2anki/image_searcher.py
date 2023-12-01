@@ -1,10 +1,15 @@
 import os
+import logging
 import requests
 import tempfile
+import googleapiclient
 from typing import Optional
 from google_images_search import GoogleImagesSearch
 
 from kobo2anki.caching import LocalFSCaching
+
+
+logger = logging.getLogger(__name__)
 
 
 class WordImage:
@@ -45,16 +50,20 @@ class ImageSearcher:
         else:
             # Define the search params
             search_params = {
-                'q': f"{word} meaning picture",
+                'q': f"{word}",
                 'num': 1,
                 'fileType': 'jpg',
                 'safe': 'medium',
             }
 
             # Search for the image
-            self._gis.search(search_params)
+            try:
+                self._gis.search(search_params)
 
-            for result in self._gis.results():
-                self._cache.save_data_to_cache(self.cache_entity, cache_filename, result.get_raw_data())
-                return WordImage(cache_filename, result.get_raw_data())
+                for result in self._gis.results():
+                    self._cache.save_data_to_cache(self.cache_entity, cache_filename, result.get_raw_data())
+                    return WordImage(cache_filename, result.get_raw_data())
+            except googleapiclient.errors.HttpError as exc:
+                logger.warning("Can't get image for word %s, err %s", word, str(exc))
+
         return None

@@ -13,6 +13,7 @@ class Parts(Enum):
     ADVERB = "adverb"
     INTERJECTION = "interjection"
     PREPOSITION = "preposition"
+    NUMERAL = "numeral"
 
 
 @dataclass

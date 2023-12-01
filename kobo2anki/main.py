@@ -28,12 +28,19 @@ logger = logging.getLogger(__name__)
 @click.option("--deck-name", default="Kobo words deck")
 @click.option("--debug/--no-debug", default=False)
 @click.option("--limit", default=-1)
-def main(kobo_path, output_deck_path, deck_name, debug, limit):
+@click.option("--exclude_words_path", default='')
+def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_path):
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
     CLIENTS = []
+    language_processor = LanguageProcessor()
+
+    with open(exclude_words_path, 'r') as fh:
+        exclude_words = set(map(lambda x: x.strip(), fh.readlines()))
+    for exclude_word in exclude_words:
+        exclude_words.add(language_processor.lemmatize_word(exclude_word))
 
     dict_app_id = os.environ.get("DICT_APP_ID")
     dict_key = os.environ.get("DICT_KEY")
@@ -61,8 +68,8 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit):
     freedict_client_instance = freedict_client.FreeDictionaryClient()
     CLIENTS.append(freedict_client_instance)
     anki_deck = anki.AnkiDeck(deck_name)
-    language_processor = LanguageProcessor()
     words_from_kobo = kobo_db.get_saved_words()
+
 
     # dedup words
     words_from_kobo = list(
@@ -70,6 +77,8 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit):
             map(lambda x: x.lower(), words_from_kobo)
         )
     )
+    # exclude already processed words
+    words_from_kobo = list(filter(lambda x: x not in exclude_words, words_from_kobo))
 
     random.shuffle(words_from_kobo)
     logger.info("Read %d words from kobo", len(words_from_kobo))

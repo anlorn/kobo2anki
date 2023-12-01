@@ -50,9 +50,12 @@ class WordPronunciation:
 
     def _save_audio_data(self, fullpath: str, audio_data: bytes):
         if os.path.exists(fullpath):
+            pass
+            """
             raise errors.SavingPronunciationError(
                 f"Can't save pronunciation to {fullpath} file already exists"
             )
+            """
 
         path, _ = os.path.split(fullpath)
         if not os.path.exists(path):
