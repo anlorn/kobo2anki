@@ -1,0 +1,11 @@
+{
+    "name": "kobo2anki dev container",
+    "image": "ubuntu:latest",
+    "features": {
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.11",
+            "toolsToInstall" : ["poetry"]
+        }
+    },
+    "postCreateCommand": "poetry install --with=dev"
+}
