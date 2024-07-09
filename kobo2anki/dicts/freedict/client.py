@@ -19,12 +19,15 @@ class FreeDictionaryClient:
         self.pronunciation_url_guesser = PronunciationURLGuesser()
 
     def get_definition(self, word: str) -> model.WordDefinition:
+        """
+        Experimental, asked chatGPT to write code for API
+        """
         logger.info("Getting defintion for word %s, using 'freedict'", word)
         base_url = "https://api.dictionaryapi.dev/api/v2/entries/en/"
         try:
             logger.debug(
                 "Will use url %s to get word %s definition", base_url + word, word)
-            response = requests.get(base_url + word)
+            response = requests.get(base_url + word, timeout=10)
             logger.debug("Got response with code %d", response.status_code)
             if response.status_code == 404:
                 raise errors.WordTranslationNotFound(word)

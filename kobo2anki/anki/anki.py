@@ -98,9 +98,9 @@ class AnkiDeck:
                         word_definition.word
                     )
                     continue
-                args[f"explanation_{i+1}"] = ";".join(definition.definitions[:3])
-                args[f"synonym_{i+1}"] = ";".join(definition.synonyms[:5])
-                args[f"example_{i+1}"] = ";".join(definition.examples[:3])
+                args[f"explanation_{i + 1}"] = ";".join(definition.definitions[:3])
+                args[f"synonym_{i + 1}"] = ";".join(definition.synonyms[:5])
+                args[f"example_{i + 1}"] = ";".join(definition.examples[:3])
             logger.debug(
                 "Generated note for word %s(%s)",
                 word_definition.word,

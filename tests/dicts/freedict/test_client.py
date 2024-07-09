@@ -66,7 +66,7 @@ class TestFreeDictinaryClient:
                     part=Parts.NOUN,
                     definitions=[
                         Definition(
-                            definitions="A representative form or pattern.",
+                            definitions=["A representative form or pattern."],
                             synonyms=["model", "pattern"],
                             examples=["I tried to set an example."]
                         )
@@ -140,12 +140,12 @@ class TestFreeDictinaryClient:
                     part=Parts.VERB,
                     definitions=[
                         Definition(
-                            definitions="Persuade (someone) gradually or by flattery to do something.",
+                            definitions=["Persuade (someone) gradually or by flattery to do something."],
                             synonyms=["persuade", "cajole"],
                             examples=["The trainees were coaxed into doing boring jobs."]
                         ),
                         Definition(
-                            definitions="Some other definition",
+                            definitions=["Some other definition"],
                             synonyms=["some_synonum"],
                             examples=["Some example"]
                         )
@@ -155,7 +155,7 @@ class TestFreeDictinaryClient:
                     part=Parts.ADJECTIVE,
                     definitions=[
                         Definition(
-                            definitions="Pretended; feigned.",
+                            definitions=["Pretended; feigned."],
                             examples=["He had a coax smile."],
                             synonyms=[],
                         )

@@ -16,19 +16,36 @@ from kobo2anki.anki import anki
 logger = logging.getLogger(__name__)
 
 
+# TODO
+# Add tests
+# Restructure to make it simpler
 @click.command(context_settings={"ignore_unknown_options": False})
 @click.argument(
     "kobo_path", type=click.Path(exists=True, file_okay=False),
+    help="Root folder for the kobo device",
+
 )
 @click.argument(
     "output_deck_path", type=click.Path(exists=False),
+    help="Path and filename for created ANKI deck"
 )
-#@click.argument("dict_key", envvar='DICT_KEY')
-#@click.argument("dict_app_id", envvar='DICT_APP_ID')
+# TODO: Implement dict choosing
+@click.option("--dict", type=click.Choice(['freedict', 'oxforddict', 'chatgpt']), default='freedict')
 @click.option("--deck-name", default="Kobo words deck")
 @click.option("--debug/--no-debug", default=False)
-@click.option("--limit", default=-1)
-@click.option("--exclude_words_path", default='')
+
+# TODO: Implement multiple decks creation
+@click.option(
+    "--limit", default=0,
+    help="Maximum number of words deck can have. Multiplr decks would be created if more words are available."
+    + "Amount of words not restriced if If value zet to zero or less"
+)
+# TODO: Implement it as caching, so user don't have to input it every time
+@click.option(
+    "--exclude_words_path", default='',
+    help="Path to a file with a list words you want to exclude. One word per line."
+    + "Can be useful if cleaning anki sqlite DB after every import is not desired."
+)
 def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_path):
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -37,7 +54,7 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
     CLIENTS = []
     language_processor = LanguageProcessor()
 
-    with open(exclude_words_path, 'r') as fh:
+    with open(exclude_words_path, 'r', encoding="utf-8") as fh:
         exclude_words = set(map(lambda x: x.strip(), fh.readlines()))
     for exclude_word in exclude_words:
         exclude_words.add(language_processor.lemmatize_word(exclude_word))
@@ -87,6 +104,8 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
     words_limit = limit if limit > 0 else len(words_from_kobo)
     logger.info("Limit number of words to %d", words_limit)
 
+
+    # TODO: restructure to make it simpler
     for word_from_kobo in words_from_kobo[:words_limit]:
         word_definition = None
         word_from_kobo = language_processor.lemmatize_word(word_from_kobo)
@@ -97,16 +116,16 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
                 if image_searcher:
                     for explanation in word_definition.explanations:
                         if explanation.part == model.Parts.NOUN:
-                            logger.info(f"Word {word_definition.word} has Noun part, will get image")
+                            logger.info("Word %s has Noun part, will get image", word_definition.word)
                             word_definition.image = image_searcher.get_image_for_word(word_definition.word)
                             break
                 else:
-                    logger.debug(f"Will not try to get image for word {word_definition.word}")
+                    logger.debug("Will not try to get image for word %s", word_definition.word)
 
                 words_definitions.append(word_definition)
                 logger.info("Found definition for word %s using client %s", word_from_kobo, dict_client)
                 break
-            except (dict_errors.WordTranslationNotFound):
+            except dict_errors.WordTranslationNotFound:
                 logger.warning(
                     "Didn't find definition for word %s, will skip the word", word_from_kobo
                 )
@@ -117,7 +136,7 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
                 logger.warning("Can't get word %s. Err: %s", word_from_kobo, exc)
         if word_definition is None:
             logger.error("Didn't find word defintion for word %s", word_from_kobo)
-    
+
     logger.debug("Going to generate anki deck for %d words", len(words_definitions))
     anki_deck.generate_and_save_deck(words_definitions, output_deck_path)
     logger.info(
