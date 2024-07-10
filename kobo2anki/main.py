@@ -19,32 +19,36 @@ logger = logging.getLogger(__name__)
 # TODO
 # Add tests
 # Restructure to make it simpler
-@click.command(context_settings={"ignore_unknown_options": False})
+@click.command(help="""
+KOBO_PATH - is a path to root folder for connected Kobo e-reader.
+OUTPUT_DECK_PATH - is a path(including filename) for created anki deck.
+""", context_settings={"ignore_unknown_options": False})
 @click.argument(
     "kobo_path", type=click.Path(exists=True, file_okay=False),
-    help="Root folder for the kobo device",
-
 )
 @click.argument(
     "output_deck_path", type=click.Path(exists=False),
-    help="Path and filename for created ANKI deck"
 )
 # TODO: Implement dict choosing
-@click.option("--dict", type=click.Choice(['freedict', 'oxforddict', 'chatgpt']), default='freedict')
-@click.option("--deck-name", default="Kobo words deck")
-@click.option("--debug/--no-debug", default=False)
-
+@click.option("--dict", show_default=True,
+              type=click.Choice(['freedict', 'oxforddict']), default='freedict',
+              help="Choose dictionary for translation. Currently supported: freedict, oxforddict"
+              )
+@click.option("--deck-name", show_default=True,
+              default="Kobo words deck"
+              )
+@click.option("--debug/--no-debug", default=False, show_default=False)
 # TODO: Implement multiple decks creation
 @click.option(
-    "--limit", default=0,
+    "--limit", default=0, show_default=True,
     help="Maximum number of words deck can have. Multiplr decks would be created if more words are available."
-    + "Amount of words not restriced if If value zet to zero or less"
+         + "Amount of words not restriced if If value zet to zero or less"
 )
 # TODO: Implement it as caching, so user don't have to input it every time
 @click.option(
-    "--exclude_words_path", default='',
+    "--exclude_words_path", default='', show_default=False,
     help="Path to a file with a list words you want to exclude. One word per line."
-    + "Can be useful if cleaning anki sqlite DB after every import is not desired."
+         + "Can be useful if cleaning anki sqlite DB after every import is not desired."
 )
 def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_path):
     if debug:
@@ -87,7 +91,6 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
     anki_deck = anki.AnkiDeck(deck_name)
     words_from_kobo = kobo_db.get_saved_words()
 
-
     # dedup words
     words_from_kobo = list(
         set(
@@ -103,7 +106,6 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
 
     words_limit = limit if limit > 0 else len(words_from_kobo)
     logger.info("Limit number of words to %d", words_limit)
-
 
     # TODO: restructure to make it simpler
     for word_from_kobo in words_from_kobo[:words_limit]:
