@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 
 import click
@@ -7,7 +8,7 @@ from typing import List
 
 from kobo2anki import model
 from kobo2anki.kobo import reader as kobo_reader
-from kobo2anki.dicts import of_client, freedict_client
+from kobo2anki.dicts import CLIENTS, DictClient
 from kobo2anki.dicts import errors as dict_errors
 from kobo2anki.language_processor import LanguageProcessor
 from kobo2anki.image_searcher import ImageSearcher
@@ -30,7 +31,7 @@ OUTPUT_DECK_PATH - is a path(including filename) for created anki deck.
     "output_deck_path", type=click.Path(exists=False),
 )
 # TODO: Implement dict choosing
-@click.option("--dict", show_default=True,
+@click.option("--dict-client", show_default=True,
               type=click.Choice(['freedict', 'oxforddict']), default='freedict',
               help="Choose dictionary for translation. Currently supported: freedict, oxforddict"
               )
@@ -50,11 +51,32 @@ OUTPUT_DECK_PATH - is a path(including filename) for created anki deck.
     help="Path to a file with a list words you want to exclude. One word per line."
          + "Can be useful if cleaning anki sqlite DB after every import is not desired."
 )
-def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_path):
+def cli(kobo_path, output_deck_path, dict_client, deck_name, debug, limit, exclude_words_path):
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
+
+    try:
+        dict_client_class = CLIENTS[dict]
+    except KeyError:
+        logger.error(
+            "Unsupported dictionary %s, supported dictionaries: %s",
+            dict,
+            list(CLIENTS.keys())
+        )
+        sys.exit(1)
+    logger.debug("Using dict client: %s", type(dict_client_class))
+    kobo = kobo_reader.KoboReader(kobo_path)
+    logger.debug("Initialized Kobo reader with kobo DB path: %s", kobo.db_path)
+    main(dict_client_class, kobo)
+
+
+
+def main(
+        dict_module: DictClient,
+        kobo_db: kobo_reader.KoboReader,
+):
     CLIENTS = []
     language_processor = LanguageProcessor()
 
@@ -85,7 +107,7 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
 
     words_definitions: List[model.WordDefinition] = []
     kobo_db = kobo_reader.KoboReader(kobo_path)
-    # TODO think how to make is extendable 
+    # TODO think how to make is extendable
     freedict_client_instance = freedict_client.FreeDictionaryClient()
     CLIENTS.append(freedict_client_instance)
     anki_deck = anki.AnkiDeck(deck_name)
@@ -147,6 +169,5 @@ def main(kobo_path, output_deck_path, deck_name, debug, limit, exclude_words_pat
         output_deck_path
     )
 
-
 if __name__ == '__main__':
-    main()
+    cli()
