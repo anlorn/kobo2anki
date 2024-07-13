@@ -10,7 +10,8 @@ CLIENTS = {
 }
 
 
+# All Dict clients must implement this protocol
 @runtime_checkable
-def DictClient(Protocol):
+class DictClient(Protocol):
     def get_definition(self, word: str) -> WordDefinition:
         pass

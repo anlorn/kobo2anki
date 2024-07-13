@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class AnkiDeck:
 
     def __init__(self, deck_name: str, image_searcher: Optional[ImageSearcher] = None):
+        #TODO: Remove image_searcher
         self._name = deck_name
         self.tempdir = tempfile.mkdtemp()
         self._model = model.AnkiModel()
