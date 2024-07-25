@@ -50,9 +50,11 @@ def test_main_successful_deck_generation(
     Simplest case where we successfully generate a deck with one word definition.
     just one word, no limit or image searcher.
     """
+
+    test_definition = word_definition_factory("test")
     dict_client = FakeDictClient(
         expected_definitions={
-            "test": word_definition_factory("test")
+            "test": test_definition
 
         },
         expected_exceptions={},
@@ -66,7 +68,7 @@ def test_main_successful_deck_generation(
         output_deck_full_path = os.path.join(
             output_deck_path, 'test_deck.apkg'
         )
-        main(
+        added_words = main(
             dict_client,
             kobo_db,
             anki_deck_generator,
@@ -80,3 +82,46 @@ def test_main_successful_deck_generation(
         assert os.path.isfile(output_deck_full_path)
         assert os.path.getsize(output_deck_full_path) > 0
 
+        assert added_words == [test_definition]
+
+def test_main_successful_deck_generation_with_exclusion(
+        word_definition_factory: Callable[[str], WordDefinition],
+):
+    """
+    Simplest case where we successfully generate a deck with one word definition.
+    just one word, no limit or image searcher.
+    """
+    test_definition = word_definition_factory("test")
+    example_definition = word_definition_factory("example")
+    dict_client = FakeDictClient(
+        expected_definitions={
+            "test": test_definition,
+            "example": example_definition,
+
+        },
+        expected_exceptions={},
+    )
+    kobo_db = FakeKoboReader(['test'])
+    anki_deck_generator = AnkiDeck('Test Deck', None)
+    language_processor = LanguageProcessor()
+    limit = 0
+    image_searcher = None
+    with tempfile.TemporaryDirectory() as output_deck_path:
+        output_deck_full_path = os.path.join(
+            output_deck_path, 'test_deck.apkg'
+        )
+        added_words = main(
+            dict_client,
+            kobo_db,
+            anki_deck_generator,
+            language_processor,
+            output_deck_full_path,
+            limit,
+            image_searcher,
+            ["example"],
+        )
+        # here we just test that not empty file was created
+        assert os.path.isfile(output_deck_full_path)
+        assert os.path.getsize(output_deck_full_path) > 0
+
+        assert added_words == [test_definition]

@@ -49,10 +49,12 @@ OUTPUT_DECK_PATH - is a path(including filename) for created anki deck.
 # TODO: Implement it as caching, so user don't have to input it every time
 @click.option(
     "--exclude_words_path", default='', show_default=False,
-    help="Path to a file with a list words you want to exclude. One word per line."
+    help="Path to a file with a list words(base form) you want to exclude. One word per line."
          + "Can be useful if cleaning anki sqlite DB after every import is not desired."
 )
-def cli(kobo_path, output_deck_path, dict_client, deck_name, debug, limit, exclude_words_path):  # pylint: disable=too-many-arguments, too-many-locals
+def cli(kobo_path, output_deck_path, dict_client,
+        deck_name, debug, limit, exclude_words_path
+):  # pylint: disable=too-many-arguments, too-many-locals
     """
     Main enter function for command line interface
     """
@@ -113,22 +115,23 @@ def cli(kobo_path, output_deck_path, dict_client, deck_name, debug, limit, exclu
     anki_deck_generator = anki.AnkiDeck(deck_name, image_searcher)
 
     if exclude_words_path:
+        if not os.file.exists(exclude_words_path):
+            logger.error(f"Exclude words file {exclude_words_path} not found.")
+            sys.exit(1)
         with open(exclude_words_path, 'r', encoding="utf-8") as fh:
             exclude_words = set(map(lambda x: x.strip(), fh.readlines()))
-        for exclude_word in exclude_words:
-            exclude_words.add(language_processor.lemmatize_word(exclude_word))
     else:
         exclude_words = []
 
-    main(
-        dict_client,
-        kobo,
-        anki_deck_generator,
-        language_processor,
-        output_deck_path,
-        limit,
-        image_searcher,
-        words_to_exclude=set(exclude_words)
+    added_words = main(
+            dict_client,
+            kobo,
+            anki_deck_generator,
+            language_processor,
+            output_deck_path,
+            limit,
+            image_searcher,
+            words_to_exclude=set(exclude_words)
     )
 
 
@@ -141,8 +144,7 @@ def main(
         limit: int,
         image_searcher: Optional[ImageSearcher],
         words_to_exclude: Optional[Set[str]]
-):
-    # language_processor = LanguageProcessor()
+) -> List[model.WordDefinition]:
     """
 
     """
@@ -182,7 +184,10 @@ def main(
         word_definition = None
         word_from_kobo = language_processor.lemmatize_word(word_from_kobo)
         try:
-            logger.debug("Getting definition for word %s, using %s", word_from_kobo, dict_client)
+            logger.debug(
+                "Getting definition for word %s, using %s",
+                word_from_kobo, dict_client
+            )
             word_definition = dict_client.get_definition(word_from_kobo)
 
             if image_searcher:
@@ -222,6 +227,7 @@ def main(
             len(words_definitions),
             output_deck_path
         )
+        return words_definitions
     else:
         raise RuntimeError("No words definitions found, skip generation of anki deck")
 
