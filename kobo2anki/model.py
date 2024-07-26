@@ -29,7 +29,7 @@ class PartExplanations:
     definitions: List[Definition]
 
 
-@dataclass
+@dataclass(order=True)
 class WordDefinition:
     word: str
     transcription: str

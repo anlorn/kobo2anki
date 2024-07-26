@@ -2,7 +2,8 @@ import os
 import sys
 import random
 import logging
-from typing import List, Set, Optional
+import itertools
+from typing import List, Set, Optional, Type, Iterable
 
 import click
 
@@ -23,7 +24,8 @@ logger = logging.getLogger(__name__)
 # Restructure to make it simpler
 @click.command(help="""
 KOBO_PATH - is a path to root folder for connected Kobo e-reader.
-OUTPUT_DECK_PATH - is a path(including filename) for created anki deck.
+OUTPUT_DECK_PATH - is a path(no filename) for created anki decks. Decks will have name NNNN.apkg where NNNN is 
+a number from 0000 to 9999.
 """, context_settings={"ignore_unknown_options": False})
 @click.argument(
     "kobo_path", type=click.Path(exists=True, file_okay=False),
@@ -112,7 +114,7 @@ def cli(kobo_path, output_deck_path, dict_client,
     language_processor = LanguageProcessor()
     logger.info("Initialized language processor")
 
-    anki_deck_generator = anki.AnkiDeck(deck_name, image_searcher)
+    anki_deck_class = anki.AnkiDeck
 
     if exclude_words_path:
         if not os.file.exists(exclude_words_path):
@@ -124,24 +126,24 @@ def cli(kobo_path, output_deck_path, dict_client,
         exclude_words = []
 
     added_words = main(
-            dict_client,
-            kobo,
-            anki_deck_generator,
-            language_processor,
-            output_deck_path,
-            limit,
-            image_searcher,
-            words_to_exclude=set(exclude_words)
+        dict_client,
+        kobo,
+        anki_deck_class,
+        language_processor,
+        output_deck_path,
+        limit,
+        image_searcher,
+        words_to_exclude=set(exclude_words)
     )
 
 
 def main(
         dict_client: DictClient,
         kobo_db: KoboDBReaderProtocol,
-        anki_deck_generator: anki.AnkiDeck,
+        anki_deck_class: Type[anki.AnkiDeck],
         language_processor: LanguageProcessor,
         output_deck_path: str,
-        limit: int,
+        words_per_deck_limit: int,
         image_searcher: Optional[ImageSearcher],
         words_to_exclude: Optional[Set[str]]
 ) -> List[model.WordDefinition]:
@@ -169,18 +171,16 @@ def main(
     # to ensure random order, it is hard to memorize if all words in deck start with A for example
     random.shuffle(words_from_kobo)
 
-    if limit > 0:
-        words_limit = limit
+    if words_per_deck_limit > 0:
         logger.info(
-            "Limit set to %d, so will process only %d words",
-            words_limit, words_limit
+            "Limit set to %d, so will put %d words per deck",
+            words_per_deck_limit, words_per_deck_limit
         )
     else:
-        logger.debug("Words limit was not set, will process all words")
-        words_limit = len(words_from_kobo)
+        logger.debug("Words limit was not set, will put all words in one deck")
 
     # TODO: restructure to make it simpler
-    for word_from_kobo in words_from_kobo[:words_limit]:
+    for word_from_kobo in words_from_kobo:
         word_definition = None
         word_from_kobo = language_processor.lemmatize_word(word_from_kobo)
         try:
@@ -220,16 +220,25 @@ def main(
             logger.error("Didn't find word definition for word %s", word_from_kobo)
 
     if words_definitions:
-        logger.debug("Going to generate anki deck for %d words", len(words_definitions))
-        anki_deck_generator.generate_and_save_deck(words_definitions, output_deck_path)
-        logger.info(
-            "Saved deck with %d words to %s",
-            len(words_definitions),
-            output_deck_path
-        )
-        return words_definitions
+        words_definitions_batches = []  # type: Iterable
+        if words_per_deck_limit and len(words_definitions) > words_per_deck_limit:
+            words_definitions_batches = itertools.batched(words_definitions, words_per_deck_limit)
+        else:
+            words_definitions_batches = [words_definitions]
+        for deck_number, words_batch in enumerate(words_definitions_batches):
+            logger.debug("Going to generate anki deck for %d words", len(words_definitions))
+            # TODO: use proper deck name`
+            anki_deck = anki_deck_class("MyDeck")
+            output_deck_full_path = os.path.join(output_deck_path, f"{deck_number:04}.apkg")
+            anki_deck.generate_and_save_deck(list(words_batch), output_deck_full_path)
+            logger.info(
+                "Saved deck with %d words to %s",
+                len(words_definitions),
+                output_deck_path
+            )
     else:
         raise RuntimeError("No words definitions found, skip generation of anki deck")
+    return words_definitions
 
 
 if __name__ == '__main__':
